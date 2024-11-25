@@ -22,6 +22,7 @@ layout(r32ui, binding = 2) uniform uimage2D warp_background_buffer_depth0;
 layout(r32ui, binding = 3) uniform uimage2D warp_background_buffer_depth1;
 void main(){
     ivec2 pixCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 pixCoord1 = pixCoord/2;
     ivec2 frameSize = textureSize(color, 0);
     if (pixCoord.x >= frameSize.x || pixCoord.y >= frameSize.y) {
 		return;
@@ -30,62 +31,60 @@ void main(){
 
     vec3 world_pos_cur = texelFetch(world_pos, pixCoord, 0).xyz;
     float dynamic = texelFetch(stencil, pixCoord, 0).x;
-    vec4 buffer_color0;
-    vec4 buffer_color1;
-    float buffer_depth0;
-    float buffer_depth1;
-    uint buffer_depth_int0;
+    vec4 buffer_color0 = vec4(0,0,0,0);
+    vec4 buffer_color1 = vec4(0,0,0,0);
+    float buffer_depth0 = 0;
+    float buffer_depth1 = 0;
+    uint buffer_depth_int0 = 2147483647;
+    uint buffer_depth_int1 = 2147483647;
+    uint layer1_flag = 0;
     //static fragments process
     if (dynamic < 0.5) {
-		// vec2 pix_mv = texelFetch(mv, pixCoord, 0).xy;
-		// pix_mv.y = -pix_mv.y;
-		// vec2 back_proj = vec2(pixCoord) - pix_mv;
-		// vec3 world_pos_prev = texelFetch(world_pos_1, ivec2(round(back_proj)), 0).xyz;
-		// world_pos_next = world_pos_cur + 0.5 * (world_pos_cur - world_pos_prev);
+        //valid B0
         buffer_color0 = texelFetch(color, pixCoord, 0);
         buffer_depth0 = texelFetch(depth, pixCoord, 0).x;
         buffer_depth_int0 = uint(2147483647 - buffer_depth0 * 65535);
+
+        //compare depth and update second layer
+        vec2 pix_mv = texelFetch(mv, pixCoord, 0).xy;
+        pix_mv.y = -pix_mv.y;
+        vec2 pre_p = vec2(pixCoord) - pix_mv;
+        ivec2 pre_pixCoord = ivec2(round(pre_p));
+        float pre_pix_depth = texelFetch(background_buffer_depth0, pre_pixCoord, 0).x;
+        uint pre_pix_depth_int = int(2147483647 - pre_pix_depth * 65535);
+
+        if(pre_pix_depth>buffer_depth0){
+
+            // buffer_depth1 = pre_pix_depth;
+            // buffer_color1 = texelFetch(background_buffer_color1, pre_pixCoord, 0);
+            imageAtomicMax(warp_background_buffer_depth1, pixCoord1, pre_pix_depth_int);
+            layer1_flag = 1;
+            
+        }
+        memoryBarrier();
+        uint pix_depth_int = imageLoad(warp_background_buffer_depth1, pixCoord1).x;
+        if (pix_depth_int == pre_pix_depth_int&&pre_pix_depth>buffer_depth0) {            
+            buffer_color1 = texelFetch(background_buffer_color0, pre_pixCoord, 0);
+            imageStore(warp_background_buffer_color1, pixCoord1, buffer_color1);
+        }
+
 	}else{
-        buffer_color0 = texelFetch(background_buffer_color0, pixCoord, 0);
-        buffer_depth0 = texelFetch(background_buffer_depth0, pixCoord, 0).x;
-        buffer_depth_int0 = uint(2147483647 - buffer_depth0 * 65535);
+        vec2 pix_mv = texelFetch(mv, pixCoord, 0).xy;
+        pix_mv.y = -pix_mv.y;
+        vec2 pre_p = vec2(pixCoord) - pix_mv;
+        ivec2 pre_pixCoord = ivec2(round(pre_p));
+        buffer_depth0 = texelFetch(background_buffer_depth0, pre_pixCoord, 0).x;
+        buffer_color0 = texelFetch(background_buffer_color0, pre_pixCoord, 0);
     }
 
 
     imageStore(warp_background_buffer_color0, pixCoord, buffer_color0);
     //imageStore(warp_background_buffer_depth0, pixCoord, buffer_depth_int0);
     imageAtomicMax(warp_background_buffer_depth0, pixCoord,  buffer_depth_int0);
+    if(layer1_flag==0){
+        imageStore(warp_background_buffer_color1, pixCoord1, buffer_color1);
+        imageAtomicMax(warp_background_buffer_depth1, pixCoord1,  buffer_depth_int1);
+    }
+
 
 }
-// void main() {
- 
-//     ivec2 pixCoord = ivec2(gl_GlobalInvocationID.xy);
-
-
-//     ivec2 texSize0 = textureSize(background_buffer_tex0, 0);
-//     ivec2 texSize1 = textureSize(background_buffer_tex1, 0);
-//     ivec2 texSize2 = textureSize(background_buffer_tex2, 0);
-//     ivec2 texSize3 = textureSize(background_buffer_tex3, 0);
-
-//     vec2 uv = vec2(pixCoord) / vec2(textureSize(background_buffer_tex0,0));
-
-
-//     ivec2 inputCoord = ivec2(uv * vec2(texSize0));
-
-
-//     // if (inputCoord.x < 0 || inputCoord.x >= texSize0.x || inputCoord.y < 0 || inputCoord.y >= texSize0.y) {
-//     //     return;
-//     // }
-
-
-//     vec4 texValue = texelFetch(background_buffer_tex0, pixCoord, 0);
-
- 
-//     uint value = uint(texValue.x ); 
-//     imageStore(warp_background_buffer_tex0, pixCoord, texValue);
-
-//     // processBackgroundBuffer(background_buffer_tex0, warp_background_buffer_tex0, pixCoord, texSize0);
-//     // processBackgroundBuffer(background_buffer_tex1, warp_background_buffer_tex1, pixCoord, texSize1);
-//     // processBackgroundBuffer(background_buffer_tex2, warp_background_buffer_tex2, pixCoord, texSize2);
-//     // processBackgroundBuffer(background_buffer_tex3, warp_background_buffer_tex3, pixCoord, texSize3);
-// }

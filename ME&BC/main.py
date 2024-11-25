@@ -53,9 +53,9 @@ def main(root="E:/workspace/zwtdataset/", sub_paths=["Bunker/train1-30fps-combin
             
             print(label_path + ": " + str(label_index))
 
-            # 如果处于debug模式，只循环1次
+            # 如果处于debug模式，只循环3次
             if debug:
-                if i >= index_range[0] :
+                if i >= index_range[0] + 5:
                     break
 
 

@@ -182,7 +182,7 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
     world_pos = read_exr(os.path.join(label_path, f"{scene_name}WorldPosition.{str(label_index-1).zfill(4)}.exr"), channel=4)
     world_pos_1 = read_exr(os.path.join(label_path, f"{scene_name}WorldPosition.{str(label_index-3).zfill(4)}.exr"), channel=4)
     mv = read_exr(os.path.join(seq_path, f"{scene_name}MotionVector.{str(input_index).zfill(4)}.exr"), channel=4)
-    depth = read_exr(os.path.join(label_path, f"{scene_name}SceneDepth.{str(label_index-1).zfill(4)}.exr"), channel=4)
+    depth = read_exr(os.path.join(label_path, f"{scene_name}SceneDepth.{str(label_index-1).zfill(4)}.exr"), channel=4)[:, :, 0:1]
     depth = np.repeat(depth, 4, axis=-1)
     color = read_exr(os.path.join(label_path, f"{scene_name}PreTonemapHDRColor.{str(label_index-1).zfill(4)}.exr"), channel=4)
     stencil = read_exr(os.path.join(label_path, f"{scene_name}MyStencil.{str(label_index-1).zfill(4)}.exr"), channel=4)
@@ -192,16 +192,12 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
 
     back_ground_buffers = create_empty_background_buffers(color.shape[1], color.shape[0])
     
-    for i, buffer in enumerate(back_ground_buffers):
-        cv2.imwrite(f"background_buffer_level_{i}.exr", buffer)
-
-    cv2.imwrite(f"color.exr", color)
-    # if(label_index-3 > 1):
-    #     #back_ground_buffer = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer.{str(label_index-3).zfill(4)}.exr"))
-    #     back_ground_buffers[0] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer0.{str(label_index-3).zfill(4)}.exr"), channel=4)
-    #     back_ground_buffers[1] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer1.{str(label_index-3).zfill(4)}.exr"), channel=4)
-    #     back_ground_buffers[2] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer2.{str(label_index-3).zfill(4)}.exr"), channel=4)
-    #     back_ground_buffers[3] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer3.{str(label_index-3).zfill(4)}.exr"), channel=4)
+    if(label_index-3 > 2):
+        #back_ground_buffer = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer.{str(label_index-3).zfill(4)}.exr"))
+        back_ground_buffers[0] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor0.{str(label_index-5).zfill(4)}.exr"), channel=4)
+        back_ground_buffers[1] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor1.{str(label_index-5).zfill(4)}.exr"), channel=4)
+        back_ground_buffers[2] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferDepth0.{str(label_index-5).zfill(4)}.exr"), channel=4)
+        back_ground_buffers[3] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferDepth1.{str(label_index-5).zfill(4)}.exr"), channel=4)
     #warp_color, warp_mv, warp_depth = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next, program)
     b0,b1,b2,b3 = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next,back_ground_buffers, program)
     #print("debug flag")
