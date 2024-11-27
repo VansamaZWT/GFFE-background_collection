@@ -150,31 +150,31 @@ def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_mat
     warp_mv = np.reshape(warp_mv, (height, width, 4))
     warp_depth = np.reshape(warp_depth, (height, width, 1))
 
-    # first inpaint
-    glUseProgram(program[2])
-     # 使用传入的ndarray中的数据创建纹理
-    mv_tex = create_texture(warp_mv, width, height)
+    # # first inpaint
+    # glUseProgram(program[2])
+    #  # 使用传入的ndarray中的数据创建纹理
+    # mv_tex = create_texture(warp_mv, width, height)
 
-    # 创建存放结果的纹理
-    inpaint_mv_tex = create_texture(None, width, height)
+    # # 创建存放结果的纹理
+    # inpaint_mv_tex = create_texture(None, width, height)
 
-    # 将纹理绑定到着色器
-    in_textures = [mv_tex]
-    glBindTextures(0, len(in_textures), in_textures)
-    out_textures = [inpaint_mv_tex]
-    glBindImageTextures(0, len(out_textures), out_textures)
+    # # 将纹理绑定到着色器
+    # in_textures = [mv_tex]
+    # glBindTextures(0, len(in_textures), in_textures)
+    # out_textures = [inpaint_mv_tex]
+    # glBindImageTextures(0, len(out_textures), out_textures)
 
-    num_groups_x = math.ceil(width / 8)
-    num_groups_y = math.ceil(height / 8)
-    glDispatchCompute(num_groups_x, num_groups_y, 1)
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
+    # num_groups_x = math.ceil(width / 8)
+    # num_groups_y = math.ceil(height / 8)
+    # glDispatchCompute(num_groups_x, num_groups_y, 1)
+    # glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
 
-    # 从结果纹理中读取数据
-    inpaint_mv = read_texture(inpaint_mv_tex, width, height)
-    inpaint_mv = np.reshape(inpaint_mv, (height, width, 4))
+    # # 从结果纹理中读取数据
+    # inpaint_mv = read_texture(inpaint_mv_tex, width, height)
+    # inpaint_mv = np.reshape(inpaint_mv, (height, width, 4))
 
     # warp!!!
-    glUseProgram(program[3])
+    glUseProgram(program[2])
     # 使用传入的ndarray中的数据创建纹理
     
     warp_background_buffer_color_tex = create_texture(warp_background_buffer_color_0,width,height)
@@ -201,13 +201,71 @@ def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_mat
     warp_color = read_texture(warp_color_tex, width, height)
     warp_color = np.reshape(warp_color, (height, width, 4))
 
+    # # get mask
+    # glUseProgram(program[3])
+    #  # 使用传入的ndarray中的数据创建纹理
 
+    # # 创建存放结果的纹理
+    # mask_tex = create_texture(None, width, height)
 
-    glDeleteTextures(14, [world_pos_tex, world_pos_1_tex, mv_tex, depth_tex, color_tex, stencil_tex, warp_background_buffer_color_tex0,warp_background_buffer_color_tex1,warp_background_buffer_depth_tex0,warp_background_buffer_depth_tex1,warp_mv_tex,warp_depth_tex,inpaint_mv_tex,warp_color_tex])
+    # # 将纹理绑定到着色器
+    # in_textures = [warp_color_tex]
+    # glBindTextures(0, len(in_textures), in_textures)
+    # out_textures = [mask_tex]
+    # glBindImageTextures(0, len(out_textures), out_textures)
+
+    # num_groups_x = math.ceil(width / 8)
+    # num_groups_y = math.ceil(height / 8)
+    # glDispatchCompute(num_groups_x, num_groups_y, 1)
+    # glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
+
+    # # 从结果纹理中读取数据
+    # mask = read_texture(mask_tex, width, height)
+    # mask = np.reshape(mask, (height, width, 4))
+
+    # bc projection
+
+    glUseProgram(program[3])
+
+    # 创建存放结果的纹理
+    inpaint_color_tex = create_texture(None, width, height)
+    b0_warp_tex = create_texture(None,width,height)
+    b1_warp_tex = create_texture(None,width,height)
+    warp_depth_tex = create_texture(None,width,height)
+    
+    # 绑定uniform矩阵
+    vp_loc = glGetUniformLocation(program[3], "vp_matrix")
+    if vp_loc >= 0:
+        glUniformMatrix4fv(vp_loc, 1, GL_TRUE, vp_matrix)
+    vp_loc = glGetUniformLocation(program[3], "vp_matrix_next")
+    if vp_loc >= 0:
+        glUniformMatrix4fv(vp_loc, 1, GL_TRUE, vp_matrix_next)
+
+    #将纹理绑定到着色器
+    in_textures = [warp_color_tex,warp_background_buffer_color_tex0,warp_background_buffer_color_tex1,warp_background_buffer_depth_tex0,warp_background_buffer_depth_tex1,warp_background_buffer_worldposition_tex0,warp_background_buffer_worldposition_tex1]
+    glBindTextures(0, len(in_textures), in_textures)
+    out_textures = [inpaint_color_tex,warp_depth_tex,b0_warp_tex,b1_warp_tex]
+    glBindImageTextures(0, len(out_textures), out_textures)
+
+    num_groups_x = math.ceil(width / 8)
+    num_groups_y = math.ceil(height / 8)
+    glDispatchCompute(num_groups_x, num_groups_y, 1)
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
+
+    # 从结果纹理中读取数据
+    inpaint_color = read_texture(inpaint_color_tex, width, height)
+    inpaint_color = np.reshape(inpaint_color, (height, width, 4))
+
+    b0_warp = read_texture( b0_warp_tex, width, height)
+    b0_warp = np.reshape( b0_warp, (height, width, 4))
+    b1_warp = read_texture( b1_warp_tex, width, height)
+    b1_warp = np.reshape( b1_warp, (height, width, 4))
+
+    glDeleteTextures(16, [world_pos_tex, world_pos_1_tex, mv_tex, depth_tex, color_tex, stencil_tex, warp_background_buffer_color_tex0,warp_background_buffer_color_tex1,warp_background_buffer_depth_tex0,warp_background_buffer_depth_tex1,warp_background_buffer_worldposition_tex0,warp_background_buffer_worldposition_tex1,warp_mv_tex,warp_depth_tex,inpaint_color_tex,warp_color_tex])
     
     glFinish()
 
-    return warp_background_buffer_color_0,warp_background_buffer_color_1,warp_background_buffer_depth_0,warp_background_buffer_depth_1, warp_background_buffer_worldposition_0, warp_background_buffer_worldposition_1, warp_mv,inpaint_mv,warp_color
+    return b0_warp,b1_warp,warp_background_buffer_color_0,warp_background_buffer_color_1,warp_background_buffer_depth_0,warp_background_buffer_depth_1, warp_background_buffer_worldposition_0, warp_background_buffer_worldposition_1, warp_mv,warp_color,inpaint_color
 
 def gffe_bc_init(shader_sources):
     # 初始化opengl和创建着色器
@@ -284,7 +342,7 @@ def create_empty_background_buffers(width, height, num_levels=2):
         current_height = max(1, current_height // 2)
     return buffers
 
-def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, programs, debug=False):
+def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, programs, start_index,debug=False):
     """
     :param label_index: 需要预测的标签帧的索引
     :param label_path: 标签帧的路径
@@ -292,6 +350,7 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
     :param save_path: 保存路径
     :param scene_name: 场景名称
     :param program: 着色器程序
+    :start_index:预测的第一帧索引
     """
     input_index = (label_index - 1) // 2
     world_pos = read_exr(os.path.join(label_path, f"{scene_name}WorldPosition.{str(label_index-1).zfill(4)}.exr"), channel=4)
@@ -307,7 +366,7 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
 
     back_ground_buffers = create_empty_background_buffers(color.shape[1], color.shape[0])
     
-    if(label_index-5 > 38):
+    if(label_index > start_index):
         #back_ground_buffer = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer.{str(label_index-3).zfill(4)}.exr"))
         back_ground_buffers[0] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor0.{str(label_index-5).zfill(4)}.exr"), channel=4)
         back_ground_buffers[1] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor1.{str(label_index-5).zfill(4)}.exr"), channel=4)
@@ -317,7 +376,7 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
         back_ground_buffers[5] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferWorldPosition1.{str(label_index-5).zfill(4)}.exr"), channel=4)
     
     #warp_color, warp_mv, warp_depth = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next, program)
-    b0,b1,b2,b3,b4,b5,mv,inpaint_mv,c = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next,back_ground_buffers, programs)
+    t0,t1,b0,b1,b2,b3,b4,b5,mv,c,inpaint_c = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next,back_ground_buffers, programs)
     #print("debug flag")
     write_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor0.{str(label_index-3).zfill(4)}.exr"),b0)
     write_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor1.{str(label_index-3).zfill(4)}.exr"),b1)
@@ -325,9 +384,11 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
     write_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferDepth1.{str(label_index-3).zfill(4)}.exr"),b3)
     write_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferWorldPosition0.{str(label_index-3).zfill(4)}.exr"),b4)
     write_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferWorldPosition1.{str(label_index-3).zfill(4)}.exr"),b5)
-    write_exr(os.path.join(save_path, f"{scene_name}InpaintMV.{str(label_index).zfill(4)}.exr"), inpaint_mv)
+    write_exr(os.path.join(save_path, f"{scene_name}InpaintColor.{str(label_index).zfill(4)}.exr"), inpaint_c)
     write_exr(os.path.join(save_path, f"{scene_name}WarpMotionVector.{str(label_index).zfill(4)}.exr"), mv)
     write_exr(os.path.join(save_path, f"{scene_name}WarpColor.{str(label_index).zfill(4)}.exr"), c)
+    write_exr(os.path.join(save_path, f"{scene_name}B0Warp.{str(label_index-3).zfill(4)}.exr"),t0)
+    write_exr(os.path.join(save_path, f"{scene_name}B1Warp.{str(label_index-3).zfill(4)}.exr"),t1)
     # write_exr(os.path.join(save_path, f"{scene_name}test.{str(label_index).zfill(4)}.exr"), test)
     # write_exr(os.path.join(save_path, f"{scene_name}WarpColor.{str(label_index).zfill(4)}.exr"), warp_color)
     # write_exr(os.path.join(save_path, f"{scene_name}WarpMotionVector.{str(label_index).zfill(4)}.exr"), warp_mv)

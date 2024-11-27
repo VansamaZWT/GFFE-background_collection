@@ -48,8 +48,7 @@ void main(){
     if (dynamic < 0.5) {
         //valid B0
         buffer_color0 = texelFetch(color, pixCoord, 0);
-        buffer_depth0 = texelFetch(depth, pixCoord, 0).x;
-        buffer_depth_int0 = uint(2147483647 - buffer_depth0 * 65535);
+        
         buffer_worldposition0 = texelFetch(world_pos,pixCoord,0);
         //compare depth and update second layer
         vec2 pix_mv = texelFetch(mv, pixCoord, 0).xy;
@@ -57,19 +56,32 @@ void main(){
         vec2 pre_p = vec2(pixCoord) - pix_mv;
         ivec2 pre_pixCoord = ivec2(round(pre_p));
         float pre_pix_depth = texelFetch(background_buffer_depth0, pre_pixCoord, 0).x;
-        uint pre_pix_depth_int = int(2147483647 - pre_pix_depth * 65535);
 
-        if(pre_pix_depth>buffer_depth0){
+        vec3 world_pos_pre = texelFetch(background_buffer_worldposition0,pre_pixCoord,0).xyz;
+        vec4 ndc_pre = transpose(vp_matrix) * vec4(world_pos_pre, 1.0);
+	    ndc_pre.xyz = ndc_pre.xyz / ndc_pre.w;
 
-            // buffer_depth1 = pre_pix_depth;
-            // buffer_color1 = texelFetch(background_buffer_color1, pre_pixCoord, 0);
+        vec3 world_pos_cur = buffer_worldposition0.xyz;
+        vec4 ndc_curr = transpose(vp_matrix) * vec4(world_pos_cur, 1.0);
+	    ndc_curr.xyz = ndc_curr.xyz / ndc_curr.w;
+
+
+        uint pre_pix_depth_int = int(2147483647 - (ndc_pre.z+1) * 65535);
+
+
+        buffer_depth0 = ndc_curr.z;
+        buffer_depth_int0 = uint(2147483647 - (buffer_depth0+1) * 65535);
+
+        if(ndc_pre.z-ndc_curr.z>0.001){
+
+            
             imageAtomicMax(warp_background_buffer_depth1, pixCoord1, pre_pix_depth_int);
             layer1_flag = 1;
             
         }
         memoryBarrier();
         uint pix_depth_int = imageLoad(warp_background_buffer_depth1, pixCoord1).x;
-        if (pix_depth_int == pre_pix_depth_int&&pre_pix_depth>buffer_depth0) {            
+        if (pix_depth_int == pre_pix_depth_int&&ndc_pre.z>ndc_curr.z) {            
             buffer_color1 = texelFetch(background_buffer_color0, pre_pixCoord, 0);
             imageStore(warp_background_buffer_color1, pixCoord1, buffer_color1);
 
@@ -83,6 +95,7 @@ void main(){
         vec2 pre_p = vec2(pixCoord) - pix_mv;
         ivec2 pre_pixCoord = ivec2(round(pre_p));
         buffer_depth0 = texelFetch(background_buffer_depth0, pre_pixCoord, 0).x;
+        buffer_depth_int0 = uint(2147483647 - (buffer_depth0+1) * 65535);
         buffer_color0 = texelFetch(background_buffer_color0, pre_pixCoord, 0);
         buffer_worldposition0 = texelFetch(background_buffer_worldposition0, pre_pixCoord, 0);
     }
