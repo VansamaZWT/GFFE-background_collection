@@ -10,7 +10,9 @@ from gffe_bc import gffe_bc_main, gffe_bc_init
 
 def main(root="E:/workspace/zwtdataset/", sub_paths=["Bunker/train1-30fps-combine"], mode="gffe_bc", debug=False):
     if mode == "gffe_bc":
-        program = gffe_bc_init()
+        programs = []
+        shader_sources = ["gffe_bc.comp", "gffe_me.comp", "inpaint.comp", "bc_proj.comp"]
+        programs = gffe_bc_init(shader_sources)
         save_path_ = "./gffe_bc"
 
     else:
@@ -49,7 +51,7 @@ def main(root="E:/workspace/zwtdataset/", sub_paths=["Bunker/train1-30fps-combin
         
         for i in range(index_range[0] + 1, index_range[1] + 1):
             label_index = 2 * i + 1
-            gffe_bc_main(label_index, label_path, input_path, save_path, scene_name, program, debug)
+            gffe_bc_main(label_index, label_path, input_path, save_path, scene_name, programs, debug)
             
             print(label_path + ": " + str(label_index))
 
@@ -61,5 +63,5 @@ def main(root="E:/workspace/zwtdataset/", sub_paths=["Bunker/train1-30fps-combin
 
 if __name__ == "__main__":
     root = "D:/datasetZWT/me_test"
-    sub_paths = ["Bunker/test10-30FPS"]
+    sub_paths = ["Bunker/test12-30FPS"]
     main(root, sub_paths, mode="gffe_bc", debug=True)

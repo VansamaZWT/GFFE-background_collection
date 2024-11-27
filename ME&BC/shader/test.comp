@@ -6,14 +6,5 @@ layout(local_size_x = 8, local_size_y = 8) in;
 layout(rgba32f, binding = 0) writeonly uniform image2D background_buffer[4];
 
 void main() {
-    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
 
-
-    for (int level = 0; level < 4; level++) {
-        ivec2 mip_size = imageSize(background_buffer[level]);
-        if (gid.x < mip_size.x && gid.y < mip_size.y) {
-
-            imageStore(background_buffer[level], gid, vec4(1.0));
-        }
-    }
 }
