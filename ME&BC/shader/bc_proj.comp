@@ -46,7 +46,7 @@ void main(){
     ivec2 forw_pos0 = ivec2(pixCoord.x + forw_0.x, pixCoord.y - forw_0.y);
     vec4 inpaint_target_color0 = texelFetch(warp_color,forw_pos0,0);
     float pix_depth0 = ndc_cur0.z + 1;
-	uint pix_depth_int0 = int(2147483647 - pix_depth0 * 65535);
+	uint pix_depth_int0 = int(pix_depth0 * 65535);
     if(inpaint_target_color0.w == 0){
 	    imageAtomicMax(warp_depth, forw_pos0, pix_depth_int0);
     }
@@ -65,7 +65,7 @@ void main(){
     ivec2 forw_pos1 = ivec2(pixCoord.x + forw_1.x, pixCoord.y - forw_1.y);
     vec4 inpaint_target_color1 = texelFetch(warp_color,forw_pos1,0);
     float pix_depth1 = ndc_cur1.z + 1;
-	uint pix_depth_int1 = int(2147483647 - pix_depth1 * 65535);
+	uint pix_depth_int1 = int(pix_depth1 * 65535);
     if(inpaint_target_color1.w == 0){
         
 	    imageAtomicMax(warp_depth, forw_pos1, pix_depth_int1);

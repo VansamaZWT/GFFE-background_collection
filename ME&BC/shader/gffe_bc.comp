@@ -66,13 +66,13 @@ void main(){
 	    ndc_curr.xyz = ndc_curr.xyz / ndc_curr.w;
 
 
-        uint pre_pix_depth_int = int(2147483647 - (ndc_pre.z+1) * 65535);
+        uint pre_pix_depth_int = int((ndc_pre.z+1) * 65535);
 
 
         buffer_depth0 = ndc_curr.z;
-        buffer_depth_int0 = uint(2147483647 - (buffer_depth0+1) * 65535);
+        buffer_depth_int0 = uint((buffer_depth0+1) * 65535);
 
-        if(ndc_pre.z-ndc_curr.z>0.001){
+        if(ndc_pre.z<ndc_curr.z){
 
             
             imageAtomicMax(warp_background_buffer_depth1, pixCoord1, pre_pix_depth_int);
@@ -81,7 +81,7 @@ void main(){
         }
         memoryBarrier();
         uint pix_depth_int = imageLoad(warp_background_buffer_depth1, pixCoord1).x;
-        if (pix_depth_int == pre_pix_depth_int&&ndc_pre.z>ndc_curr.z) {            
+        if (pix_depth_int == pre_pix_depth_int&&ndc_pre.z<ndc_curr.z) {            
             buffer_color1 = texelFetch(background_buffer_color0, pre_pixCoord, 0);
             imageStore(warp_background_buffer_color1, pixCoord1, buffer_color1);
 
