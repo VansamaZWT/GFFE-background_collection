@@ -57,11 +57,11 @@ def main(root="E:/workspace/zwtdataset/", sub_paths=["Bunker/train1-30fps-combin
 
             # 如果处于debug模式，只循环3次
             if debug:
-                if i >= index_range[0] + 5:
+                if i >= index_range[0] + 17:
                     break
 
 
 if __name__ == "__main__":
     root = "D:/datasetZWT/me_test"
-    sub_paths = ["Bunker/test12-30FPS"]
+    sub_paths = ["Bunker/test16-30FPS"]
     main(root, sub_paths, mode="gffe_bc", debug=True)

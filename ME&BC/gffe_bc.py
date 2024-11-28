@@ -18,14 +18,14 @@ def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_mat
     
     
     # 使用传入的ndarray中的数据创建纹理
-    world_pos_tex = create_texture(world_pos, width, height)
+    world_pos_tex = create_texture(world_pos, width, height) 
     world_pos_1_tex = create_texture(world_pos_1, width, height)
     mv_tex = create_texture(mv, width, height)
     depth_tex = create_texture(depth, width, height)
     color_tex = create_texture(color, width, height)
     stencil_tex = create_texture(stencil, width, height)
 
-    
+   
 
     background_buffer_color0 = create_texture(background_buffers[0],width,height)
     background_buffer_color1 = create_texture(background_buffers[1],width//2,height//2)
@@ -42,6 +42,7 @@ def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_mat
     # warp_mv_tex = create_texture(None, width, height)
     # warp_depth_tex = create_texture(None, width, height, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT)
     
+
 
     warp_background_buffer_color_tex0 = create_texture(None, width, height)
     warp_background_buffer_color_tex1 = create_texture(None, width//2, height//2)
@@ -74,6 +75,7 @@ def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_mat
     #bc
     glUseProgram(program[0])
     # 将纹理绑定到着色器
+
     glBindTextures(0, len(in_textures), in_textures)
     glBindImageTextures(0, len(out_textures), out_textures)
     # 绑定uniform矩阵
@@ -103,10 +105,10 @@ def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_mat
     warp_background_buffer_color_1 = np.reshape(warp_background_buffer_color_1, (height//2, width//2, 4))
 
     warp_background_buffer_depth_0 = read_texture(warp_background_buffer_depth_tex0, width, height, GL_RED_INTEGER, GL_UNSIGNED_INT)
-    warp_background_buffer_depth_0 = (( np.expand_dims(warp_background_buffer_depth_0, axis=-1)) / 65535-1).astype(np.float32)
+    warp_background_buffer_depth_0 = (( (np.expand_dims(warp_background_buffer_depth_0, axis=-1)) / 65535)).astype(np.float32)
     warp_background_buffer_depth_0 = np.reshape(warp_background_buffer_depth_0, (height, width, 1))
     warp_background_buffer_depth_1 = read_texture(warp_background_buffer_depth_tex1, width//2, height//2, GL_RED_INTEGER, GL_UNSIGNED_INT)
-    warp_background_buffer_depth_1 = ((np.expand_dims(warp_background_buffer_depth_1, axis=-1)) / 65535-1).astype(np.float32)
+    warp_background_buffer_depth_1 = ((np.expand_dims(warp_background_buffer_depth_1, axis=-1)) / 65535).astype(np.float32)
     warp_background_buffer_depth_1 = np.reshape(warp_background_buffer_depth_1, (height//2, width//2, 1))
 
     warp_background_buffer_worldposition_0 = read_texture(warp_background_buffer_worldposition_tex0, width, height)

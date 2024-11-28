@@ -54,25 +54,27 @@ void main(){
         vec2 pix_mv = texelFetch(mv, pixCoord, 0).xy;
         pix_mv.y = -pix_mv.y;
         vec2 pre_p = vec2(pixCoord) - pix_mv;
-        ivec2 pre_pixCoord = ivec2(round(pre_p));
-        float pre_pix_depth = texelFetch(background_buffer_depth0, pre_pixCoord, 0).x;
+        ivec2 pre_pixCoord = pixCoord;
+        //float pre_pix_depth = texelFetch(background_buffer_depth0, pre_pixCoord, 0).x;
 
         vec3 world_pos_pre = texelFetch(background_buffer_worldposition0,pre_pixCoord,0).xyz;
         vec4 ndc_pre = transpose(vp_matrix) * vec4(world_pos_pre, 1.0);
 	    ndc_pre.xyz = ndc_pre.xyz / ndc_pre.w;
+
+        
 
         vec3 world_pos_cur = buffer_worldposition0.xyz;
         vec4 ndc_curr = transpose(vp_matrix) * vec4(world_pos_cur, 1.0);
 	    ndc_curr.xyz = ndc_curr.xyz / ndc_curr.w;
 
 
-        uint pre_pix_depth_int = int((ndc_pre.z+1) * 65535);
+        uint pre_pix_depth_int = int((ndc_pre.z) * 65535);
 
 
         buffer_depth0 = ndc_curr.z;
-        buffer_depth_int0 = uint((buffer_depth0+1) * 65535);
+        buffer_depth_int0 = uint((buffer_depth0) * 65535);
 
-        if(ndc_pre.z<ndc_curr.z){
+        if(pre_pix_depth_int<buffer_depth_int0){
 
             
             imageAtomicMax(warp_background_buffer_depth1, pixCoord1, pre_pix_depth_int);
@@ -81,7 +83,7 @@ void main(){
         }
         memoryBarrier();
         uint pix_depth_int = imageLoad(warp_background_buffer_depth1, pixCoord1).x;
-        if (pix_depth_int == pre_pix_depth_int&&ndc_pre.z<ndc_curr.z) {            
+        if (pix_depth_int == pre_pix_depth_int&&pre_pix_depth_int<buffer_depth_int0) {            
             buffer_color1 = texelFetch(background_buffer_color0, pre_pixCoord, 0);
             imageStore(warp_background_buffer_color1, pixCoord1, buffer_color1);
 
@@ -95,7 +97,7 @@ void main(){
         vec2 pre_p = vec2(pixCoord) - pix_mv;
         ivec2 pre_pixCoord = ivec2(round(pre_p));
         buffer_depth0 = texelFetch(background_buffer_depth0, pre_pixCoord, 0).x;
-        buffer_depth_int0 = uint(2147483647 - (buffer_depth0+1) * 65535);
+        buffer_depth_int0 = uint((buffer_depth0) * 65535);
         buffer_color0 = texelFetch(background_buffer_color0, pre_pixCoord, 0);
         buffer_worldposition0 = texelFetch(background_buffer_worldposition0, pre_pixCoord, 0);
     }
