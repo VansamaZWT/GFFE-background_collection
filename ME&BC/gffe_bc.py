@@ -13,7 +13,7 @@ def bind_background_buffer(texture_id, levels=4):
     for level in range(levels):
         glBindImageTexture(level, texture_id, level, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F)
 
-def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next,background_buffers, program):
+def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil,vp_matrix_pre ,vp_matrix, vp_matrix_next,background_buffers, program):
     height, width = color.shape[0], color.shape[1]
     
     
@@ -79,6 +79,9 @@ def gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_mat
     glBindTextures(0, len(in_textures), in_textures)
     glBindImageTextures(0, len(out_textures), out_textures)
     # 绑定uniform矩阵
+    vp_loc = glGetUniformLocation(program[0], "vp_matrix_pre")
+    if vp_loc >= 0:
+        glUniformMatrix4fv(vp_loc, 1, GL_TRUE, vp_matrix_pre)
     vp_loc = glGetUniformLocation(program[0], "vp_matrix")
     if vp_loc >= 0:
         glUniformMatrix4fv(vp_loc, 1, GL_TRUE, vp_matrix)
@@ -367,7 +370,7 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
     vp_matrix_next = read_matrix(os.path.join(label_path, f"{scene_name}Matrix.{str(label_index).zfill(4)}.txt"))
 
     back_ground_buffers = create_empty_background_buffers(color.shape[1], color.shape[0])
-    
+    vp_matrix_pre = np.zeros((4, 4), dtype=np.float32)
     if(label_index > start_index):
         #back_ground_buffer = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBuffer.{str(label_index-3).zfill(4)}.exr"))
         back_ground_buffers[0] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor0.{str(label_index-3).zfill(4)}.exr"), channel=4)
@@ -376,9 +379,10 @@ def gffe_bc_main(label_index, label_path, seq_path, save_path, scene_name, progr
         back_ground_buffers[3] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferDepth1.{str(label_index-3).zfill(4)}.exr"), channel=4)
         back_ground_buffers[4] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferWorldPosition0.{str(label_index-3).zfill(4)}.exr"), channel=4)
         back_ground_buffers[5] = read_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferWorldPosition1.{str(label_index-3).zfill(4)}.exr"), channel=4)
-    
+        vp_matrix_pre = read_matrix(os.path.join(label_path, f"{scene_name}Matrix.{str(label_index-3).zfill(4)}.txt"))
+
     #warp_color, warp_mv, warp_depth = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next, program)
-    t0,t1,b0,b1,b2,b3,b4,b5,mv,c,inpaint_c = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil, vp_matrix, vp_matrix_next,back_ground_buffers, programs)
+    t0,t1,b0,b1,b2,b3,b4,b5,mv,c,inpaint_c = gffe_bc(world_pos, world_pos_1, mv, depth, color, stencil,vp_matrix_pre ,vp_matrix, vp_matrix_next,back_ground_buffers, programs)
     #print("debug flag")
     write_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor0.{str(label_index-1).zfill(4)}.exr"),b0)
     write_exr(os.path.join(save_path, f"{scene_name}BackgroundBufferColor1.{str(label_index-1).zfill(4)}.exr"),b1)

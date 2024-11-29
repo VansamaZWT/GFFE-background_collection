@@ -63,5 +63,5 @@ def main(root="E:/workspace/zwtdataset/", sub_paths=["Bunker/train1-30fps-combin
 
 if __name__ == "__main__":
     root = "D:/datasetZWT/me_test"
-    sub_paths = ["Bunker/test16-30FPS"]
-    main(root, sub_paths, mode="gffe_bc", debug=True)
+    sub_paths = ["Bunker/test17-30FPS"]
+    main(root, sub_paths, mode="gffe_bc", debug=False)
